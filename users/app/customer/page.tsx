@@ -1,6 +1,8 @@
 // app/customer/page.tsx
 import Link from 'next/link';
 import { ProductCard } from '@/components/customer/ProductCard';
+import pool from '@/lib/db';
+export const dynamic = 'force-dynamic';
 import { 
   ArrowRight, Truck, RotateCcw, Shield, Zap, 
   Smartphone, Tablet, Laptop, Headphones, Mouse 
@@ -24,16 +26,32 @@ const FEATURES = [
 export default async function CustomerHomePage() {
   const baseUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
-  : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
+  : process.env.NEXT_PUBLIC_APP_URL || 'https://tmdt-nextjs.vercel.app';
 
-const res = await fetch(`${baseUrl}/api/products`, {
-    cache: 'no-store',
-  });
+let featuredProducts: any[] = [];
 
-  const data = await res.json();
-  const products = data.success ? data.data : [];
-  const featuredProducts = products.slice(0, 8);
+try {
+  const [rows] = await pool.query(`
+    SELECT 
+      sp.id,
+      sp.tensanpham,
+      sp.hinhanh,
+      sp.gia,
+      sp.soluong,
+      sp.mota,
+      sp.danhmuc_id,
+      dm.tendanhmuc
+    FROM sanpham sp
+    LEFT JOIN danhmuc dm ON sp.danhmuc_id = dm.id
+    WHERE sp.trangthai = 1
+    ORDER BY sp.id DESC
+    LIMIT 8
+  `);
 
+  featuredProducts = rows as any[];
+} catch (error) {
+  console.error('Error loading featured products:', error);
+}
   return (
     <div className="bg-white">
       {/* ========== HERO SECTION ========== */}
