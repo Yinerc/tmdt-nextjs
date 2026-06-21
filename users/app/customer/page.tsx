@@ -22,7 +22,11 @@ const FEATURES = [
 ];
 
 export default async function CustomerHomePage() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/products`, {
+  const baseUrl = process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
+
+const res = await fetch(`${baseUrl}/api/products`, {
     cache: 'no-store',
   });
 
