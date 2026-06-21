@@ -1,7 +1,7 @@
 // app/customer/products/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ProductCard } from '@/components/customer/ProductCard';
 import { Search, SlidersHorizontal, X, AlertCircle, Package } from 'lucide-react';
@@ -16,7 +16,7 @@ interface Product {
   tendanhmuc?: string;
 }
 
-export default function ProductsPage() {
+function ProductsContent() {
   const searchParams = useSearchParams();
   const danhmucIdFromUrl = searchParams.get('danhmuc_id');
 
@@ -182,5 +182,13 @@ export default function ProductsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center">Đang tải sản phẩm...</div>}>
+      <ProductsContent />
+    </Suspense>
   );
 }
