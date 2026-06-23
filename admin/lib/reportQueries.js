@@ -39,15 +39,16 @@ function orderValidWhere(alias = "") {
 
 export async function getReportData() {
   const [
-    totalProducts,
-    activeProducts,
-    totalCategories,
-    totalCustomers,
-    totalOrders,
-    totalRevenue,
-    lowStock,
-    totalInventoryValue,
-  ] = await Promise.all([
+  totalProducts,
+  activeProducts,
+  totalCategories,
+  totalCustomers,
+  totalOrders,
+  totalRevenue,
+  totalVAT,
+  lowStock,
+  totalInventoryValue,
+] = await Promise.all([
     scalar("SELECT COUNT(*) AS value FROM sanpham"),
     scalar("SELECT COUNT(*) AS value FROM sanpham WHERE trangthai = 1"),
     scalar("SELECT COUNT(*) AS value FROM danhmuc"),
@@ -59,6 +60,11 @@ export async function getReportData() {
        WHERE ${orderValidWhere()}`,
       CANCELLED_STATUSES
     ),
+    scalar(
+  `SELECT COALESCE(SUM(tongtien * 0.1), 0) AS value
+   FROM donhang
+   WHERE trangthai = 'da_giao'`
+),
     scalar("SELECT COUNT(*) AS value FROM sanpham WHERE soluong <= 5"),
     scalar("SELECT COALESCE(SUM(gia * soluong), 0) AS value FROM sanpham"),
   ]);
@@ -148,13 +154,14 @@ export async function getReportData() {
   );
 
   return {
-    stats: {
+      stats: {
       totalProducts,
       activeProducts,
       totalCategories,
       totalCustomers,
       totalOrders,
       totalRevenue,
+      totalVAT,
       lowStock,
       totalInventoryValue,
     },

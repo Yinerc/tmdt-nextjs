@@ -86,6 +86,11 @@ export default async function ReportsPage() {
           <small>Không tính đơn đã hủy</small>
         </article>
         <article className={styles.card}>
+          <span>Thuế VAT (10%)</span>
+          <strong>{money(stats.totalVAT)}</strong>
+          <small>Đơn đã giao</small>
+        </article>
+        <article className={styles.card}>
           <span>Sắp hết hàng</span>
           <strong>{number(stats.lowStock)}</strong>
           <small>Số lượng ≤ 5</small>
