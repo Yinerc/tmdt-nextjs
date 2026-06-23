@@ -87,7 +87,7 @@ export default function CheckoutPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
+  
   const applyVoucher = async () => {
     setVoucherError('');
     if (!voucherCode.trim()) {
@@ -180,6 +180,8 @@ export default function CheckoutPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+  customerId: isLoggedIn && user?.id ? user.id : null,
+
           fullName: formData.fullName,
           phone: formData.phone,
           address: formData.address,

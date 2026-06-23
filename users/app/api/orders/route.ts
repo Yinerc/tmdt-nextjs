@@ -46,7 +46,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+
     const {
+      customerId,
       fullName,
       phone,
       address,
@@ -67,30 +69,68 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!fullName || !phone || !address) {
+      return NextResponse.json(
+        { success: false, message: 'Thiếu thông tin giao hàng' },
+        { status: 400 }
+      );
+    }
+
+    const finalCustomerId = customerId ? Number(customerId) : null;
+
     const orderCode = 'DH' + Date.now().toString().slice(-8).toUpperCase();
 
-    // 1. Tạo đơn hàng
     const [orderResult]: any = await pool.query(
-      `INSERT INTO donhang 
-        (order_code, khachhang_id, tongtien, trangthai, ghichu, created_at) 
-       VALUES (?, ?, ?, 'cho_xu_ly', ?, NOW())`,
-      [orderCode, null, totalAmount, note || null]
+      `
+      INSERT INTO donhang (
+        order_code,
+        khachhang_id,
+        full_name,
+        phone,
+        address,
+        city,
+        subtotal,
+        discount_amount,
+        tongtien,
+        voucher_code,
+        payment_method,
+        trangthai,
+        ghichu,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cho_xu_ly', ?, NOW())
+      `,
+      [
+        orderCode,
+        finalCustomerId,
+        fullName,
+        phone,
+        address,
+        city || null,
+        subtotal || 0,
+        discountAmount || 0,
+        totalAmount || 0,
+        voucherCode || null,
+        paymentMethod || 'cod',
+        note || null,
+      ]
     );
 
     const orderId = orderResult.insertId;
 
-    // 2. Lưu chi tiết đơn hàng
     const orderItems = cartItems.map((item: any) => [
       orderId,
       item.id,
       item.quantity,
-      item.price,
+      item.price || item.gia || 0,
     ]);
 
     await pool.query(
-      `INSERT INTO donhang_chitiet 
-        (donhang_id, sanpham_id, soluong, dongia) 
-       VALUES ?`,
+      `
+      INSERT INTO donhang_chitiet 
+      (donhang_id, sanpham_id, soluong, dongia)
+      VALUES ?
+      `,
       [orderItems]
     );
 
@@ -101,8 +141,13 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     console.error('Create order error:', error);
+
     return NextResponse.json(
-      { success: false, message: 'Không thể tạo đơn hàng', error: error.message },
+      {
+        success: false,
+        message: 'Không thể tạo đơn hàng',
+        error: error.message,
+      },
       { status: 500 }
     );
   }
