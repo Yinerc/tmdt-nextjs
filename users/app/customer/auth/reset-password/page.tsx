@@ -1,13 +1,13 @@
 // users\app\customer\auth\reset-password\page.tsx
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Lock, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-function ResetPasswordContent() {
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -144,13 +144,5 @@ function ResetPasswordContent() {
         </form>
       </div>
     </div>
-  );
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={<div className="p-10 text-center">Đang tải...</div>}>
-      <ResetPasswordContent />
-    </Suspense>
   );
 }

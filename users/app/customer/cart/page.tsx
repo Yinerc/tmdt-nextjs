@@ -91,20 +91,11 @@ export default function CartPage() {
             {cart.map((item) => (
               <div key={item.id} className="flex gap-6 p-6 border-b last:border-b-0">
                 <div className="w-24 h-24 relative rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-                  {typeof item.image === "string" && item.image.length > 0 ? (
-  <Image
-    src={item.image}
-    alt={item.name ?? "Sản phẩm"}
-    fill
-    className="object-cover"
-  />
-) : (
-  <ShoppingCart className="m-auto" />
-)}
+                  {item.image ? <Image src={item.image} alt={item.name} fill className="object-cover" /> : <ShoppingCart className="m-auto" />}
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg">{item.name}</h3>
-                  <p className="text-red-600 font-bold text-xl">{(item.price ?? 0).toLocaleString('vi-VN')}₫</p>
+                  <p className="text-red-600 font-bold text-xl">{item.price.toLocaleString('vi-VN')}₫</p>
 
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex items-center border border-gray-300 rounded-lg">
@@ -116,7 +107,7 @@ export default function CartPage() {
                   </div>
                 </div>
                 <div className="font-semibold text-lg whitespace-nowrap">
-                  {((item.price ?? 0) * (item.quantity ?? 1)).toLocaleString('vi-VN')}₫
+                  {(item.price * item.quantity).toLocaleString('vi-VN')}₫
                 </div>
               </div>
             ))}
