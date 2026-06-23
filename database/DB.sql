@@ -15,6 +15,9 @@
   DROP VIEW IF EXISTS v_thongke_sanpham_banchay;
 
   -- Xoa bang neu da ton tai
+  DROP TABLE IF EXISTS thanh_toan_qr_log;
+  DROP TABLE IF EXISTS thanh_toan_qr;
+  DROP TABLE IF EXISTS thanh_toan;
   DROP TABLE IF EXISTS password_resets;
   DROP TABLE IF EXISTS donhang_chitiet;
   DROP TABLE IF EXISTS donhang;
@@ -286,6 +289,73 @@
   WHERE dh.trangthai <> 'da_huy'
   GROUP BY sp.id, sp.tensanpham, dm.tendanhmuc;
 
+
+
+-- ==========================================================
+-- 13. BANG PHUONG THUC THANH TOAN
+-- Bảng cha cho thanh_toan_qr, phải tạo trước thanh_toan_qr.
+-- ==========================================================
+CREATE TABLE thanh_toan (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ten_phuong_thuc VARCHAR(100) NOT NULL,
+  ma_phuong_thuc VARCHAR(50) NOT NULL UNIQUE,
+  mo_ta TEXT NULL,
+  trangthai TINYINT DEFAULT 1 COMMENT '1=active, 0=inactive',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  INDEX idx_thanh_toan_ma (ma_phuong_thuc),
+  INDEX idx_thanh_toan_trangthai (trangthai)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO thanh_toan (id, ten_phuong_thuc, ma_phuong_thuc, mo_ta, trangthai)
+VALUES
+(1, 'Thanh toán khi nhận hàng', 'cod', 'Khách hàng thanh toán khi nhận hàng', 1),
+(2, 'Chuyển khoản ngân hàng', 'bank', 'Khách hàng chuyển khoản ngân hàng', 1),
+(3, 'Thanh toán QR', 'qr', 'Thanh toán bằng mã QR/VietQR', 1),
+(4, 'Ví điện tử', 'wallet', 'Thanh toán bằng ví điện tử', 1);
+
+-- 14. Thanh toán QR - Chi tiết mã QR
+CREATE TABLE thanh_toan_qr (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  thanh_toan_id INT NOT NULL,
+  donhang_id INT NOT NULL,
+  qr_code_data VARCHAR(255) NOT NULL COMMENT 'Dữ liệu QR: TMDT-ORDER-{id}-{amount}',
+  so_tien DECIMAL(15,2) NOT NULL,
+  trang_thai VARCHAR(50) DEFAULT 'tao_qr' COMMENT 'tao_qr, dang_quay, da_nhan_tien, that_bai, het_han',
+  bank_code VARCHAR(20) NULL COMMENT 'VietQR, NAPAS, VCB, MB...',
+  nguon_giao_dich VARCHAR(100) NULL COMMENT 'VIETQR, MOMO, ZALOPAY, BANKING...',
+  transaction_id VARCHAR(100) NULL COMMENT 'ID từ hệ thống thanh toán',
+  reference_code VARCHAR(100) NULL,
+  so_lan_quet INT DEFAULT 0 COMMENT 'Số lần QR được quét',
+  lan_quet_cuoi TIMESTAMP NULL,
+  thoi_gian_het_han TIMESTAMP NULL COMMENT 'QR hết hạn sau 15 phút',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (donhang_id),
+  INDEX (trang_thai),
+  INDEX (transaction_id),
+  UNIQUE KEY unique_qr_code (qr_code_data),
+  FOREIGN KEY (thanh_toan_id) REFERENCES thanh_toan(id) ON DELETE CASCADE,
+  FOREIGN KEY (donhang_id) REFERENCES donhang(id) ON DELETE CASCADE
+);
+
+-- 15. Log thay đổi trạng thái QR
+CREATE TABLE thanh_toan_qr_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  thanh_toan_qr_id INT NOT NULL,
+  thanh_toan_id INT NULL,
+  trang_thai_cu VARCHAR(50) NULL,
+  trang_thai_moi VARCHAR(50) NOT NULL,
+  ghi_chu TEXT NULL,
+  ip_address VARCHAR(50) NULL,
+  user_agent TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX (thanh_toan_qr_id),
+  INDEX (created_at),
+  FOREIGN KEY (thanh_toan_qr_id) REFERENCES thanh_toan_qr(id) ON DELETE CASCADE
+);
+
   -- ==========================================================
   -- 10. DU LIEU MAU
   -- ==========================================================
@@ -495,4 +565,8 @@
   UNION ALL
   SELECT 'vouchers' AS bang, COUNT(*) AS so_dong FROM vouchers
   UNION ALL
-  SELECT 'admin_users' AS bang, COUNT(*) AS so_dong FROM admin_users;
+  SELECT 'admin_users' AS bang, COUNT(*) AS so_dong FROM admin_users
+  UNION ALL
+  SELECT 'thanh_toan' AS bang, COUNT(*) AS so_dong FROM thanh_toan
+  UNION ALL
+  SELECT 'thanh_toan_qr' AS bang, COUNT(*) AS so_dong FROM thanh_toan_qr;

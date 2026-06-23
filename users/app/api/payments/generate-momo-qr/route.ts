@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import QRCode from 'qrcode';
 
-// MoMo Account Configuration
 const MOMO_CONFIG = {
   accountNumber: '0375418489',
   accountName: 'TRAN VO HUU THANG',
   bankCode: 'MOMO',
 };
 
-// Hàm tạo dữ liệu thanh toán MoMo theo định dạng tiêu chuẩn
-function generateMomoPaymentInfo(orderId: number | string, amount: number, description: string): string {
-  // MoMo sử dụng định dạng: {số điện thoại / số tài khoản}|{tên tài khoản}|{số tiền}|{nội dung}
+function generateMomoPaymentInfo(
+  orderId: number | string,
+  amount: number,
+  description: string
+): string {
   return `${MOMO_CONFIG.accountNumber}|${MOMO_CONFIG.accountName}|${amount}|${description}`;
 }
 
@@ -18,50 +20,53 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { orderId, amount, orderCode } = body;
 
-    if (!orderId || !amount) {
+    const finalAmount = Number(amount);
+
+    if (!orderId || !finalAmount) {
       return NextResponse.json(
-        { error: 'Thiếu thông tin bắt buộc (orderId, amount)' },
+        { success: false, error: 'Thiếu thông tin bắt buộc orderId hoặc amount' },
         { status: 400 }
       );
     }
 
-    // Tạo nội dung mô tả cho QR code
-    const description = `${orderCode || `DH${orderId}`} - ${amount}đ`;
-    
-    // Tạo dữ liệu QR code theo chuẩn MoMo
-    const momoQRString = generateMomoPaymentInfo(orderId, amount, description);
+    const description = `${orderCode || `DH${orderId}`} - ${finalAmount}đ`;
+    const momoQRString = generateMomoPaymentInfo(orderId, finalAmount, description);
+
+    const qrCodeDataUrl = await QRCode.toDataURL(momoQRString, {
+      width: 320,
+      margin: 2,
+    });
 
     return NextResponse.json({
       success: true,
       data: {
         orderId,
         orderCode: orderCode || `DH${orderId}`,
-        amount,
+        amount: finalAmount,
         accountNumber: MOMO_CONFIG.accountNumber,
         accountName: MOMO_CONFIG.accountName,
         bankCode: MOMO_CONFIG.bankCode,
         description,
-        qrCodeDataUrl: '/momo-qr.jpg', // Sử dụng hình ảnh static từ public folder
-        qrCodeString: momoQRString, // Chuỗi QR
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // Hết hạn sau 15 phút
-        instructions: [
-          '1. Quét mã QR bằng ứng dụng MoMo hoặc ứng dụng ngân hàng',
-          '2. Kiểm tra thông tin và xác nhận thanh toán',
-          '3. Đơn hàng sẽ được xác nhận tự động sau khi thanh toán thành công',
-        ],
+        qrCodeDataUrl,
+        qrCodeString: momoQRString,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
       },
     });
   } catch (error: any) {
     console.error('Generate MoMo QR Error:', error);
+
     return NextResponse.json(
-      { error: 'Lỗi khi tạo mã QR thanh toán', details: error.message },
+      {
+        success: false,
+        error: 'Lỗi khi tạo mã QR thanh toán',
+        details: error.message,
+      },
       { status: 500 }
     );
   }
 }
 
-// GET endpoint để lấy thông tin tài khoản MoMo
-export async function GET(request: NextRequest) {
+export async function GET() {
   return NextResponse.json({
     success: true,
     data: {
